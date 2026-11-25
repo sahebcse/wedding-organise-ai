@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { @apply bg-ivory text-stone-900 antialiased; }
+.card { @apply rounded-2xl border border-gold/30 bg-white shadow-lg shadow-maroon/5; }
+.btn-primary { @apply rounded-xl bg-maroon px-5 py-3 font-semibold text-white hover:bg-maroon-dark active:scale-[.98] transition min-h-[44px]; }
+.btn-gold { @apply rounded-xl bg-gold px-5 py-3 font-semibold text-maroon-dark hover:bg-gold-light active:scale-[.98] transition min-h-[44px]; }
+.input { @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-gold focus:ring-2 focus:ring-gold/40 min-h-[44px]; }
+.pill { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-bold; }
+.mandala-bg {
+  background-image: radial-gradient(circle at 50% 0%, rgba(201,162,39,.18), transparent 60%),
+    radial-gradient(circle at 85% 20%, rgba(107,15,43,.08), transparent 50%);
+}

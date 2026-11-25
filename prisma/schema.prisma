@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("GUEST")
+  faceOnboarded Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  photos        Photo[]
+  batchMessages BatchMessage[]
+  face          FaceEmbedding?
+}
+
+model Family {
+  id         String  @id @default(cuid())
+  name       String
+  phone      String?
+  city       String?
+  ownerEmail String?
+  guests Guest[]
+}
+
+model Guest {
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  fullName String
+  phone    String?
+  relation String?
+  diet     String @default("UNKNOWN")
+  invites  EventInvite[]
+  arrivals Arrival[]
+  contributions Contribution[]
+}
+
+model Wedding {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  coupleNames String
+  story       String  @default("")
+  venues      String  @default("[]")
+  musicUrl    String?
+  events      Event[]
+}
+
+model Event {
+  id             String   @id @default(cuid())
+  weddingId      String
+  wedding        Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  key            String
+  title          String
+  venue          String
+  startsAt       DateTime
+  capacityWarnAt Int      @default(200)
+  capacityMax    Int      @default(300)
+  invites        EventInvite[]
+  photos         Photo[]
+}
+
+model EventInvite {
+  id      String  @id @default(cuid())
+  guestId String
+  guest   Guest   @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eligible Boolean @default(true)
+  rsvp   RSVP?
+  @@unique([guestId, eventId])
+}
+
+model RSVP {
+  id            String   @id @default(cuid())
+  eventInviteId String   @unique
+  invite        EventInvite @relation(fields: [eventInviteId], references: [id], onDelete: Cascade)
+  status        String   @default("PENDING")
+  headcount     Int      @default(0)
+  source        String   @default("PAGE")
+  rawText       String?
+  updatedAt     DateTime @updatedAt
+}
+
+model Arrival {
+  id        String   @id @default(cuid())
+  guestId   String
+  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  mode      String
+  station   String
+  arrivalAt DateTime
+  partySize Int      @default(1)
+  venue     String
+  pnrRef    String?
+  pickupMember PickupMember?
+}
+
+model Vehicle {
+  id       String @id @default(cuid())
+  label    String
+  capacity Int
+  type     String @default("CAB")
+  batches  PickupBatch[]
+}
+
+model PickupBatch {
+  id          String   @id @default(cuid())
+  venue       String
+  station     String   @default("")
+  windowStart DateTime
+  windowEnd   DateTime
+  vehicleId   String?
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id])
+  status      String   @default("PLANNED")
+  members     PickupMember[]
+  messages    BatchMessage[]
+}
+
+model PickupMember {
+  id        String      @id @default(cuid())
+  batchId   String
+  batch     PickupBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  arrivalId String      @unique
+  arrival   Arrival     @relation(fields: [arrivalId], references: [id], onDelete: Cascade)
+}
+
+model BatchMessage {
+  id       String      @id @default(cuid())
+  batchId  String
+  batch    PickupBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User        @relation(fields: [authorId], references: [id])
+  text     String
+  createdAt DateTime   @default(now())
+}
+
+model Gift {
+  id              String @id @default(cuid())
+  title           String
+  imageUrl        String?
+  pricePaise      Int
+  qtyNeeded       Int    @default(1)
+  contributions   Contribution[]
+}
+
+model Contribution {
+  id          String  @id @default(cuid())
+  giftId      String
+  gift        Gift    @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  guestId     String
+  guest       Guest   @relation(fields: [guestId], references: [id])
+  amountPaise Int
+  anonymous   Boolean @default(false)
+  name        String  @default("Guest")
+  status      String  @default("CONFIRMED")
+}
+
+model Board {
+  id       String @id @default(cuid())
+  title    String
+  category String @default("MISC")
+  tasks    Task[]
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  boardId       String
+  board         Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  title         String
+  owner         String?
+  status        String   @default("TODO")
+  dueAt         DateTime?
+  priority      String   @default("MEDIUM")
+  estimatePaise Int      @default(0)
+  actualPaise   Int      @default(0)
+  dependsOn     String?
+  updates       TaskUpdate[]
+  subtickets    SubTicket[]
+}
+
+model SubTicket {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  status    String   @default("TODO")
+  owner     String?
+  createdAt DateTime @default(now())
+}
+
+model TaskUpdate {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    String   @default("Team")
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model EventLog {
+  id        String   @id @default(cuid())
+  kind      String
+  message   String
+  payload   String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model FlagOverride {
+  key   String @unique
+  value String
+}
+
+model TranslationCache {
+  id        String   @id @default(cuid())
+  lang      String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  @@unique([lang, key])
+}
+
+model SarvamUsage {
+  id        String   @id @default(cuid())
+  feature   String
+  chars     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  kind      String
+  payload   String   @default("{}")
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  eventId    String?
+  event      Event?   @relation(fields: [eventId], references: [id])
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  url        String
+  createdAt  DateTime @default(now())
+  matches    PhotoMatch[]
+}
+
+model FaceEmbedding {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vectors   String   @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+model PhotoMatch {
+  id      String @id @default(cuid())
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  userId  String
+  score   Float
+  @@unique([photoId, userId])
+}
